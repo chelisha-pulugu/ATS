@@ -11,7 +11,7 @@ ALLOWED_EXTENSIONS = {"pdf"}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 client = genai.Client(
-    api_key="AIzaSyB_OaWtl8VqLqTrgHdy4q6tkw43NWq6r0o"   
+    api_key="_API_KEY_"   
 )
 
 app = Flask(__name__)
@@ -148,3 +148,4 @@ def analyze():
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
+
