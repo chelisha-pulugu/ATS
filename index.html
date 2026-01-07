@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Insight | Next-Gen Resume Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669' },
+                        spotify: { green: '#1DB954', black: '#121212', gray: '#181818', lightGray: '#282828' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        :root { --primary: #1DB954; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.5s ease; }
+        
+        .light body { background-color: #f8fafc; color: #1e293b; background-image: radial-gradient(at 0% 0%, rgba(29, 185, 84, 0.1) 0px, transparent 50%); }
+        .dark body { background-color: #000000; color: #ffffff; background-image: radial-gradient(at 0% 0%, rgba(29, 185, 84, 0.08) 0px, transparent 40%); }
+
+        .glass-card { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .light .glass-card { background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.05); }
+        .dark .glass-card { background: #121212; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8); }
+
+        /* Score Circle Styles */
+        .score-circle-lg { 
+            position: relative; 
+            width: 240px; 
+            height: 240px; 
+            border-radius: 50%; 
+            background: conic-gradient(var(--primary) calc(var(--percentage, 0) * 1%), #e2e8f0 0); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: --percentage 1.5s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .dark .score-circle-lg { background: conic-gradient(var(--primary) calc(var(--percentage, 0) * 1%), #282828 0); }
+        
+        .score-circle-lg::before { 
+            content: ""; 
+            position: absolute; 
+            width: 210px; 
+            height: 210px; 
+            border-radius: 50%; 
+            z-index: 1;
+        }
+        .light .score-circle-lg::before { background: white; }
+        .dark .score-circle-lg::before { background: #000; }
+
+        .score-value-lg { 
+            font-size: 5rem; 
+            font-weight: 900; 
+            background: linear-gradient(135deg, #1DB954, #1ed760); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            position: relative; 
+            z-index: 10; 
+        }
+
+        /* Enhanced Hover Effects */
+        .hover-lift:hover { transform: translateY(-4px); border-color: var(--primary) !important; }
+        
+        .pill-btn { border-radius: 500px; font-weight: 700; transition: all 0.2s ease; }
+        .pill-btn:hover { transform: scale(1.02); }
+        
+        .upload-zone { border: 2px dashed rgba(29, 185, 84, 0.3); transition: all 0.3s ease; }
+        .upload-zone:hover { border-color: var(--primary); background: rgba(29, 185, 84, 0.05); }
+
+        .loader { width: 48px; height: 48px; border: 4px solid rgba(29, 185, 84, 0.1); border-bottom-color: #1DB954; border-radius: 50%; animation: rotation 1s linear infinite; display: inline-block; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .markdown-content ul { list-style-type: none; padding-left: 0; }
+        .markdown-content li { position: relative; padding-left: 1.5rem; margin-bottom: 0.5rem; }
+        .markdown-content li::before { content: "•"; color: #1DB954; position: absolute; left: 0; font-weight: bold; }
+        
+        .view-section { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <!-- Alerts -->
+    <div id="alert-container" class="fixed top-8 left-1/2 -translate-x-1/2 z-[2000] flex flex-col space-y-2"></div>
+
+    <!-- Nav -->
+    <nav class="max-w-7xl mx-auto px-6 py-8 flex justify-between items-center relative z-50">
+        <div class="flex items-center space-x-2 cursor-pointer" onclick="location.reload()">
+            <div class="w-10 h-10 bg-[#1DB954] rounded-xl flex items-center justify-center shadow-lg text-white">
+                <i class="fa-solid fa-bolt-lightning"></i>
+            </div>
+            <span class="text-2xl font-extrabold tracking-tight dark:text-white text-slate-800">ATS <span class="text-[#1DB954]">Insight</span></span>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <button id="theme-toggle" class="w-12 h-12 glass-card rounded-full flex items-center justify-center text-xl text-[#1DB954]">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:block"></i>
+            </button>
+            <button id="get-started-btn" onclick="toggleAuth()" class="bg-[#1DB954] text-white px-8 py-3 pill-btn shadow-lg hover:bg-[#1ed760]">Get Started</button>
+            <button id="logout-btn" onclick="handleLogout()" class="hidden bg-white/5 text-slate-400 border border-white/10 px-8 py-3 pill-btn flex items-center space-x-2">
+                <span>Logout</span><i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 pb-20">
+        <!-- Input Section -->
+        <section id="upload-section" class="max-w-4xl mx-auto text-center py-12 view-section">
+            <h1 class="text-4xl md:text-6xl font-extrabold dark:text-white mb-6 leading-tight">Unlock your resume's <span class="text-[#1DB954]">true potential.</span></h1>
+            <p class="text-lg text-slate-500 dark:text-slate-400 mb-12">Upload your PDF resume and paste the job description to start the Gemini AI audit.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="glass-card p-8 rounded-[2rem] text-left hover-lift border-transparent">
+                    <h3 class="text-xs font-black uppercase text-slate-400 tracking-widest mb-4">1. Job Description</h3>
+                    <textarea id="jd-input" placeholder="Paste the job requirements here..." class="w-full h-64 bg-slate-500/5 dark:bg-[#181818] border border-transparent dark:border-[#282828] rounded-2xl p-4 outline-none focus:border-[#1DB954] text-sm dark:text-white resize-none transition-all hover:bg-slate-500/10 dark:hover:bg-[#1ed760]/5"></textarea>
+                </div>
+                
+                <div class="glass-card p-8 rounded-[2rem] flex flex-col hover-lift border-transparent">
+                    <h3 class="text-xs font-black uppercase text-slate-400 tracking-widest mb-4 text-left">2. Resume PDF</h3>
+                    <div id="drop-zone" class="upload-zone flex-1 rounded-2xl flex flex-col items-center justify-center cursor-pointer group">
+                        <i class="fa-solid fa-file-pdf text-4xl text-[#1DB954] mb-4 group-hover:scale-110 transition-transform"></i>
+                        <p class="text-sm font-bold dark:text-white group-hover:text-[#1DB954] transition-colors">Select PDF</p>
+                        <input type="file" id="file-input" class="hidden" accept=".pdf">
+                    </div>
+                    <div id="file-display" class="hidden mt-4 bg-[#1DB954]/10 p-4 rounded-xl flex items-center justify-between">
+                        <span id="file-name" class="text-sm font-bold text-[#1DB954] truncate max-w-[180px]">resume.pdf</span>
+                        <button onclick="removeFile()" class="text-red-500 hover:scale-125 transition-transform"><i class="fa-solid fa-circle-xmark"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="scan-btn" onclick="startAudit()" class="bg-[#1DB954] text-white w-full py-6 pill-btn font-extrabold text-xl flex items-center justify-center space-x-3 shadow-xl hover:shadow-[#1DB954]/20">
+                <span>Analyze Match</span><i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+        </section>
+
+        <!-- Loading -->
+        <div id="loading-overlay" class="hidden py-32 text-center">
+            <span class="loader mb-8"></span>
+            <h2 class="text-3xl font-bold dark:text-white">Connecting to Backend...</h2>
+            <p class="text-slate-400 mt-4">Gemini is processing your career data.</p>
+        </div>
+
+        <!-- Results Section -->
+        <section id="results-dashboard" class="hidden mt-10 space-y-12 view-section">
+            <!-- Central Score Indicator -->
+            <div class="flex flex-col items-center justify-center space-y-6">
+                <div class="score-circle-lg shadow-[0_0_80px_-20px_rgba(29,185,84,0.3)]" id="score-container">
+                    <div class="relative z-10 flex flex-col items-center">
+                        <span class="score-value-lg" id="final-score-val">0</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 -mt-2">ATS Score</span>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <h2 class="text-4xl font-extrabold dark:text-white">Analysis <span class="text-[#1DB954]">Complete.</span></h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mt-2">Based on Gemini AI's deep matching algorithm.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="glass-card p-8 rounded-[2.5rem] border-t-4 border-[#1DB954]">
+                    <h3 class="text-xl font-bold dark:text-white mb-6 flex items-center"><i class="fa-solid fa-user-tie mr-3 text-[#1DB954]"></i> Your Profile</h3>
+                    <div id="res-parsed" class="markdown-content text-sm dark:text-slate-400 space-y-2"></div>
+                </div>
+
+                <div class="glass-card p-8 rounded-[2.5rem] border-t-4 border-blue-500">
+                    <h3 class="text-xl font-bold dark:text-white mb-6 flex items-center"><i class="fa-solid fa-briefcase mr-3 text-blue-500"></i> Job Focus</h3>
+                    <div id="jd-parsed" class="markdown-content text-sm dark:text-slate-400 space-y-2"></div>
+                </div>
+
+                <div class="glass-card p-8 rounded-[2.5rem] border-t-4 border-emerald-500">
+                    <h3 class="text-xl font-bold dark:text-white mb-6 flex items-center"><i class="fa-solid fa-chart-line mr-3 text-emerald-500"></i> ATS Report</h3>
+                    <div id="ats-report" class="markdown-content text-sm dark:text-slate-400 whitespace-pre-line leading-relaxed"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-center pt-8">
+                <button onclick="location.reload()" class="px-12 py-4 pill-btn border dark:border-[#282828] dark:text-white hover:bg-white/5">Start New Audit</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="glass-card max-w-md w-full p-8 rounded-[2rem] relative">
+            <button onclick="toggleAuth()" class="absolute top-6 right-6 text-slate-400"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold dark:text-white">Welcome Back</h2>
+                <p class="text-slate-500 text-sm mt-2">Sign in to access advanced AI tools.</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleAuthSubmit();" class="space-y-4">
+                <input type="email" placeholder="Email" class="w-full bg-slate-500/5 border dark:border-[#282828] rounded-xl py-3 px-4 outline-none focus:border-[#1DB954] dark:text-white">
+                <input type="password" placeholder="Password" class="w-full bg-slate-500/5 border dark:border-[#282828] rounded-xl py-3 px-4 outline-none focus:border-[#1DB954] dark:text-white">
+                <button type="submit" class="bg-[#1DB954] text-white w-full py-3 pill-btn font-bold">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let isAuthenticated = false;
+        let selectedFile = null;
+
+        function showView(id) {
+            document.querySelectorAll('section, #loading-overlay').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        const fInput = document.getElementById('file-input');
+        const dZone = document.getElementById('drop-zone');
+
+        dZone.onclick = () => { if(!isAuthenticated) return toggleAuth(); fInput.click(); };
+        fInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        function handleFile(file) {
+            if (!file || file.type !== 'application/pdf') return showAlert("Please upload a PDF.", "error");
+            selectedFile = file;
+            document.getElementById('file-name').innerText = file.name;
+            document.getElementById('file-display').classList.remove('hidden');
+            dZone.classList.add('hidden');
+        }
+
+        function removeFile() {
+            selectedFile = null;
+            fInput.value = "";
+            document.getElementById('file-display').classList.add('hidden');
+            dZone.classList.remove('hidden');
+        }
+
+        async function startAudit() {
+            if (!isAuthenticated) return toggleAuth();
+            const jd = document.getElementById('jd-input').value.trim();
+            if (!jd || !selectedFile) return showAlert("Both JD and Resume are required!", "error");
+
+            showView('loading-overlay');
+
+            const formData = new FormData();
+            formData.append('resume', selectedFile);
+            formData.append('job_description', jd);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Backend Error");
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (err) {
+                showAlert("Failed to connect to backend. Make sure Flask is running on port 8080.", "error");
+                showView('upload-section');
+            }
+        }
+
+        
+        // ...existing code...
+
+function extractScore(text) {
+    // Updated regex to find the number after "percentage" (case-insensitive)
+    const match = text.match(/percentage.*?(\d+)/i);
+    const score = match ? parseInt(match[1]) : 0;
+    // Ensure score is between 0 and 100
+    return Math.min(100, Math.max(0, score));
+}
+
+// ...existing code...
+
+        function displayResults(data) {
+            const formatText = (txt) => txt.replace(/\n/g, '<br>').replace(/\* /g, '• ');
+            document.getElementById('res-parsed').innerHTML = formatText(data.parsed_resume);
+            document.getElementById('jd-parsed').innerHTML = formatText(data.parsed_job_description);
+            document.getElementById('ats-report').innerHTML = data.ats_result;
+            
+            // Extract and Animate Score
+            const score = extractScore(data.ats_result);
+            animateScore(score);
+
+            showView('results-dashboard');
+        }
+
+        function animateScore(target) {
+            const display = document.getElementById('final-score-val');
+            const container = document.getElementById('score-container');
+            let current = 0;
+            const duration = 1500;
+            const stepTime = Math.abs(Math.floor(duration / target));
+            
+            // Update CSS Variable for circle
+            container.style.setProperty('--percentage', target);
+
+            const timer = setInterval(() => {
+                current += 1;
+                display.innerText = current;
+                if (current >= target) clearInterval(timer);
+            }, stepTime);
+        }
+
+        function toggleAuth() { document.getElementById('auth-modal').classList.toggle('hidden'); }
+        function handleAuthSubmit() {
+            isAuthenticated = true;
+            toggleAuth();
+            document.getElementById('get-started-btn').classList.add('hidden');
+            document.getElementById('logout-btn').classList.remove('hidden');
+            showAlert("Access Granted.");
+        }
+        function handleLogout() {
+            isAuthenticated = false;
+            document.getElementById('logout-btn').classList.add('hidden');
+            document.getElementById('get-started-btn').classList.remove('hidden');
+            location.reload();
+        }
+
+        function showAlert(msg, type="success") {
+            const c = document.getElementById('alert-container');
+            const d = document.createElement('div');
+            d.className = `px-6 py-3 rounded-xl shadow-2xl text-white font-bold animate-bounce ${type === 'success' ? 'bg-[#1DB954]' : 'bg-red-500'}`;
+            d.innerText = msg;
+            c.appendChild(d);
+            setTimeout(() => d.remove(), 3000);
+        }
+
+        const html = document.documentElement;
+        if(localStorage.theme === 'dark') html.className = 'dark';
+        document.getElementById('theme-toggle').onclick = () => {
+            html.classList.toggle('dark');
+            localStorage.theme = html.className;
+        };
+    </script>
+</body>
+</html>
